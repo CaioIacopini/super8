@@ -70,6 +70,16 @@ app.delete("/usuarios/:id", async (req, res) => {
   }
 });
 
+app.get("/healthcheck", async (req, res) => {
+  try {
+    // só pra ver se o banco responde
+    await prisma.$queryRaw`dbStats`;
+    res.status(200).json({ status: "ok", db: "connected" });
+  } catch (err) {
+    res.status(500).json({ status: "error", db: "disconnected" });
+  }
+});
+
 /* ===================== SUPER 8 ===================== */
 
 app.post("/super8", async (req, res) => {
@@ -335,11 +345,14 @@ app.delete("/ranking/reset", async (req, res) => {
 import path from "path";
 import { fileURLToPath } from "url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-app.use(express.static(path.join(__dirname, "dist")));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// servir o build do frontend
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "dist", "index.html"));
+  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
 });
 
 app.listen(3000, () => {
