@@ -332,10 +332,6 @@ app.delete("/ranking/reset", async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-  console.log("API rodando na porta 3000");
-});
-
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -344,4 +340,8 @@ app.use(express.static(path.join(__dirname, "dist")));
 
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "dist", "index.html"));
+});
+
+app.listen(3000, () => {
+  console.log("API rodando na porta 3000");
 });
