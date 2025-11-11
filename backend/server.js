@@ -1,5 +1,7 @@
 import cors from "cors";
 import express from "express";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { PrismaClient } from "./generated/prisma/index.js";
 
 const prisma = new PrismaClient();
@@ -8,7 +10,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// vamos mapear os anjos do front p/ ObjectId válido
+const JWT_SECRET = "super8-secret-very-strong";
+
+// ============== helpers de anjo ==============
 const ANGEL_OBJECT_IDS = {
   "angel-1": "000000000000000000000001",
   "angel-2": "000000000000000000000002",
@@ -20,37 +24,162 @@ const ANGEL_OBJECT_IDS = {
   "angel-8": "000000000000000000000008",
 };
 
-// helper: é anjo?
 function isAngelId(userId) {
   return !userId || userId.startsWith("angel-");
 }
-
-// converte "angel-3" para um ObjectId fixo
 function toAngelObjectId(userId) {
   return ANGEL_OBJECT_IDS[userId] || "0000000000000000000000ff";
 }
 
-/* ===================== USUÁRIOS ===================== */
+// ============== middlewares ==============
+function auth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: "Token não enviado" });
 
-app.post("/usuarios", async (req, res) => {
+  const [, token] = authHeader.split(" ");
   try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded; // { id, email, role }
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: "Token inválido" });
+  }
+}
+
+function isAdmin(req, res, next) {
+  if (req.user?.role !== "ADMIN") {
+    return res.status(403).json({ error: "Apenas admin pode fazer isso" });
+  }
+  next();
+}
+
+// ===================== AUTH =====================
+
+app.post("/auth/register", async (req, res) => {
+  try {
+    const { name, age, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: "Dados incompletos" });
+    }
+
+    const emailExists = await prisma.user.findUnique({ where: { email } });
+    if (emailExists) {
+      return res.status(400).json({ error: "Email já cadastrado" });
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+
     const user = await prisma.user.create({
       data: {
-        email: req.body.email,
-        name: req.body.name,
-        age: req.body.age,
+        name,
+        age: age || "",
+        email,
+        password: hash,
+        role: "USER",
       },
     });
-    res.status(201).json(user);
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.status(201).json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
   } catch (err) {
-    console.error("Erro ao criar usuário:", err);
-    res.status(400).json({ error: "Erro ao criar usuário" });
+    console.error("Erro ao registrar:", err);
+    res.status(400).json({ error: "Erro ao registrar" });
   }
 });
 
-app.get("/usuarios", async (req, res) => {
+app.post("/auth/login", async (req, res) => {
   try {
-    const users = await prisma.user.findMany();
+    const { email, password } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(400).json({ error: "Usuário não encontrado" });
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(400).json({ error: "Senha inválida" });
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    console.error("Erro ao logar:", err);
+    res.status(400).json({ error: "Erro ao logar" });
+  }
+});
+
+// rota pra promover alguém (precisa de admin)
+app.post("/auth/make-admin", auth, isAdmin, async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Informe o email" });
+
+    const user = await prisma.user.update({
+      where: { email },
+      data: { role: "ADMIN" },
+    });
+
+    res.json({ message: `Usuário ${user.email} agora é ADMIN` });
+  } catch (err) {
+    console.error(err);
+    res.status(400).json({ error: "Erro ao promover admin" });
+  }
+});
+
+// ===================== USUÁRIOS =====================
+
+// lista básica para TODOS logados (id + name) -> pra montar selects
+app.get("/usuarios/basic", auth, async (req, res) => {
+  try {
+    const list = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: { name: "asc" },
+    });
+    res.json(list);
+  } catch (err) {
+    console.error("Erro ao buscar usuários básicos:", err);
+    res.status(500).json({ error: "Erro ao buscar usuários" });
+  }
+});
+
+// lista completa -> só admin
+app.get("/usuarios", auth, isAdmin, async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        age: true,
+        role: true,
+      },
+    });
     res.status(200).json(users);
   } catch (err) {
     console.error("Erro ao buscar usuários:", err);
@@ -58,7 +187,7 @@ app.get("/usuarios", async (req, res) => {
   }
 });
 
-app.delete("/usuarios/:id", async (req, res) => {
+app.delete("/usuarios/:id", auth, isAdmin, async (req, res) => {
   try {
     await prisma.user.delete({
       where: { id: req.params.id },
@@ -70,19 +199,10 @@ app.delete("/usuarios/:id", async (req, res) => {
   }
 });
 
-app.get("/healthcheck", async (req, res) => {
-  try {
-    // só pra ver se o banco responde
-    await prisma.$queryRaw`dbStats`;
-    res.status(200).json({ status: "ok", db: "connected" });
-  } catch (err) {
-    res.status(500).json({ status: "error", db: "disconnected" });
-  }
-});
+// ===================== SUPER 8 =====================
 
-/* ===================== SUPER 8 ===================== */
-
-app.post("/super8", async (req, res) => {
+// criar -> QUALQUER logado
+app.post("/super8", auth, async (req, res) => {
   try {
     const super8 = await prisma.super8.create({
       data: {
@@ -96,7 +216,7 @@ app.post("/super8", async (req, res) => {
   }
 });
 
-app.get("/super8", async (req, res) => {
+app.get("/super8", auth, async (req, res) => {
   try {
     const list = await prisma.super8.findMany({
       orderBy: { createdAt: "desc" },
@@ -108,7 +228,7 @@ app.get("/super8", async (req, res) => {
   }
 });
 
-app.get("/super8/:id", async (req, res) => {
+app.get("/super8/:id", auth, async (req, res) => {
   const { id } = req.params;
   try {
     const s8 = await prisma.super8.findUnique({
@@ -122,8 +242,8 @@ app.get("/super8/:id", async (req, res) => {
   }
 });
 
-// apaga tudo
-app.delete("/super8/reset-all", async (req, res) => {
+// apaga tudo -> admin
+app.delete("/super8/reset-all", auth, isAdmin, async (req, res) => {
   try {
     await prisma.super8Result.deleteMany({});
     await prisma.super8.deleteMany({});
@@ -136,8 +256,8 @@ app.delete("/super8/reset-all", async (req, res) => {
   }
 });
 
-// apaga 1
-app.delete("/super8/:id", async (req, res) => {
+// apaga 1 -> admin
+app.delete("/super8/:id", auth, isAdmin, async (req, res) => {
   try {
     const id = req.params.id;
 
@@ -156,17 +276,14 @@ app.delete("/super8/:id", async (req, res) => {
   }
 });
 
-/* =========== registrar jogo (usado pela página 3) =========== */
-
-app.post("/super8/:id/match", async (req, res) => {
+// registrar jogo
+app.post("/super8/:id/match", auth, async (req, res) => {
   const super8Id = req.params.id;
   const { playerAId, playerBId, gamesA, gamesB } = req.body;
 
   async function addGames(userId, games) {
-    // anjo numerado
     if (isAngelId(userId)) {
       const angelObjId = toAngelObjectId(userId);
-      // vamos somar por angelObjId (assim anjo-1 fica sempre o mesmo)
       const existingAngel = await prisma.super8Result.findFirst({
         where: {
           super8Id,
@@ -195,7 +312,6 @@ app.post("/super8/:id/match", async (req, res) => {
       return;
     }
 
-    // jogador normal
     const existing = await prisma.super8Result.findFirst({
       where: {
         super8Id,
@@ -238,9 +354,8 @@ app.post("/super8/:id/match", async (req, res) => {
   }
 });
 
-/* =========== ranking de UM super 8 (com anjos numerados) =========== */
-
-app.get("/super8/:id/ranking", async (req, res) => {
+// ranking de UM super 8 (anjos contam aqui)
+app.get("/super8/:id/ranking", auth, async (req, res) => {
   const super8Id = req.params.id;
   try {
     const results = await prisma.super8Result.findMany({
@@ -252,13 +367,12 @@ app.get("/super8/:id/ranking", async (req, res) => {
 
     for (const r of results) {
       if (r.isAngel) {
-        // descobrir qual anjo é pelo userId salvo
         const angelEntry = Object.entries(ANGEL_OBJECT_IDS).find(
           ([, objId]) => objId === r.userId
         );
         const angelLabel = angelEntry ? angelEntry[0] : "angel-x";
         const angelNumber = angelLabel.split("-")[1] || "?";
-        const key = r.userId; // objectId do anjo
+        const key = r.userId;
 
         if (!map[key]) {
           map[key] = {
@@ -272,7 +386,6 @@ app.get("/super8/:id/ranking", async (req, res) => {
         continue;
       }
 
-      // jogador real
       const key = r.userId;
       if (!map[key]) {
         map[key] = {
@@ -296,10 +409,9 @@ app.get("/super8/:id/ranking", async (req, res) => {
   }
 });
 
-/* ===================== RANKING GLOBAL ===================== */
-// aqui anjo NÃO conta
-
-app.get("/ranking", async (req, res) => {
+// ===================== RANKING GLOBAL =====================
+// anjo NÃO conta aqui
+app.get("/ranking", auth, async (req, res) => {
   try {
     const results = await prisma.super8Result.findMany({
       include: { user: true },
@@ -308,7 +420,7 @@ app.get("/ranking", async (req, res) => {
     const map = {};
 
     for (const r of results) {
-      if (r.isAngel || !r.userId) continue; // ignora anjo no global
+      if (r.isAngel || !r.userId) continue;
 
       if (!map[r.userId]) {
         map[r.userId] = {
@@ -332,7 +444,7 @@ app.get("/ranking", async (req, res) => {
   }
 });
 
-app.delete("/ranking/reset", async (req, res) => {
+app.delete("/ranking/reset", auth, isAdmin, async (req, res) => {
   try {
     await prisma.super8Result.deleteMany({});
     res.status(200).json({ message: "Ranking zerado com sucesso" });
@@ -340,19 +452,6 @@ app.delete("/ranking/reset", async (req, res) => {
     console.error("Erro ao zerar ranking:", err);
     res.status(400).json({ error: "Erro ao zerar ranking" });
   }
-});
-
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// servir o build do frontend
-app.use(express.static(path.join(__dirname, "../frontend/dist")));
-
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
 });
 
 app.listen(3000, () => {

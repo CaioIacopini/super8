@@ -15,19 +15,79 @@ export default function Super8Matches() {
   const [ranking, setRanking] = useState([]);
   const [showPodium, setShowPodium] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [search, setSearch] = useState("");
 
-  // carregar dados iniciais
+  // mesmo schedule de antes
+  const baseSchedule = [
+    [
+      [0, 1],
+      [2, 3],
+    ],
+    [
+      [4, 5],
+      [6, 7],
+    ],
+    [
+      [5, 7],
+      [1, 3],
+    ],
+    [
+      [4, 6],
+      [0, 2],
+    ],
+    [
+      [0, 6],
+      [1, 7],
+    ],
+    [
+      [2, 4],
+      [3, 5],
+    ],
+    [
+      [2, 5],
+      [0, 7],
+    ],
+    [
+      [1, 6],
+      [3, 4],
+    ],
+    [
+      [2, 7],
+      [1, 4],
+    ],
+    [
+      [0, 5],
+      [3, 6],
+    ],
+    [
+      [0, 3],
+      [4, 7],
+    ],
+    [
+      [1, 2],
+      [5, 6],
+    ],
+    [
+      [1, 5],
+      [0, 4],
+    ],
+    [
+      [2, 6],
+      [3, 7],
+    ],
+  ];
+
   useEffect(() => {
     async function load() {
       try {
         const [s8Res, usersRes] = await Promise.all([
           api.get(`/super8/${id}`),
-          api.get("/usuarios"),
+          api.get("/usuarios/basic"),
         ]);
         setSuper8(s8Res.data);
         setUsers(usersRes.data);
 
-        // 8 slots
+        // monta 8 slots iniciais
         const initialPlayers = Array.from({ length: 8 }, (_, i) => {
           const u = usersRes.data[i];
           return { userId: u ? u.id : "" };
@@ -35,11 +95,14 @@ export default function Super8Matches() {
         setPlayers(initialPlayers);
       } catch (err) {
         console.error("Erro ao carregar dados:", err);
+        if (err.response?.status === 401) {
+          navigate("/");
+        }
       }
     }
     load();
     loadRanking();
-  }, [id]);
+  }, [id, navigate]);
 
   async function loadRanking() {
     try {
@@ -50,7 +113,6 @@ export default function Super8Matches() {
     }
   }
 
-  // completa vazios com anjos numerados
   function handleFillAngels() {
     setPlayers((prev) =>
       prev.map((p, idx) => {
@@ -68,90 +130,82 @@ export default function Super8Matches() {
     });
   }
 
-  // gerar os 14 jogos fixos
+  function buildMatchesFromOrder(order) {
+    return baseSchedule.map((game, idx) => {
+      const [[a1, a2], [b1, b2]] = game;
+      return {
+        id: idx + 1,
+        playerA1: order[a1],
+        playerA2: order[a2],
+        playerB1: order[b1],
+        playerB2: order[b2],
+        gamesA: "",
+        gamesB: "",
+      };
+    });
+  }
+
+  function validateMaxTwoOpponents(matchesToCheck) {
+    const pairCount = {};
+    for (const m of matchesToCheck) {
+      const A = [m.playerA1, m.playerA2];
+      const B = [m.playerB1, m.playerB2];
+      for (const pa of A) {
+        for (const pb of B) {
+          if (!pa || !pb) continue;
+          const x = pa < pb ? pa : pb;
+          const y = pa < pb ? pb : pa;
+          const key = `${x}-${y}`;
+          pairCount[key] = (pairCount[key] || 0) + 1;
+          if (pairCount[key] > 2) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+
+  function shuffleArray(arr) {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
   function handleGenerateMatches() {
     if (players.length < 8 || players.some((p) => !p.userId)) {
       alert("Preencha as 8 posições primeiro (pode usar Anjo).");
       return;
     }
 
-    const schedule = [
-      [
-        [0, 1],
-        [2, 3],
-      ],
-      [
-        [4, 5],
-        [6, 7],
-      ],
-      [
-        [5, 7],
-        [1, 3],
-      ],
-      [
-        [4, 6],
-        [0, 2],
-      ],
-      [
-        [0, 6],
-        [1, 7],
-      ],
-      [
-        [2, 4],
-        [3, 5],
-      ],
-      [
-        [2, 5],
-        [0, 7],
-      ],
-      [
-        [1, 6],
-        [3, 4],
-      ],
-      [
-        [2, 7],
-        [1, 4],
-      ],
-      [
-        [0, 5],
-        [3, 6],
-      ],
-      [
-        [0, 3],
-        [4, 7],
-      ],
-      [
-        [1, 2],
-        [5, 6],
-      ],
-      [
-        [1, 5],
-        [0, 4],
-      ],
-      [
-        [2, 6],
-        [3, 7],
-      ],
-    ];
+    const baseOrder = players.map((p) => p.userId);
+    let finalMatches = buildMatchesFromOrder(baseOrder);
 
-    const generated = schedule.map((game, idx) => {
-      const [[a1, a2], [b1, b2]] = game;
-      return {
-        id: idx + 1,
-        playerA1: players[a1].userId,
-        playerA2: players[a2].userId,
-        playerB1: players[b1].userId,
-        playerB2: players[b2].userId,
-        gamesA: "",
-        gamesB: "",
-      };
-    });
+    if (!validateMaxTwoOpponents(finalMatches)) {
+      let found = false;
+      for (let t = 0; t < 300; t++) {
+        const shuffled = shuffleArray(baseOrder);
+        const candidate = buildMatchesFromOrder(shuffled);
+        if (validateMaxTwoOpponents(candidate)) {
+          finalMatches = candidate;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        console.warn(
+          "Não consegui montar todos os jogos com a regra de no máximo 2 confrontos, vou usar a ordem atual."
+        );
+      }
+    }
 
-    setMatches(generated);
+    setMatches(finalMatches);
     setShowPodium(false);
   }
 
-  // nomezinho
   function getNameById(userId) {
     if (!userId) return "—";
     if (userId.startsWith("angel-")) {
@@ -162,7 +216,6 @@ export default function Super8Matches() {
     return u ? u.name : "Desconhecido";
   }
 
-  // ranking denso
   function buildDenseRanking(list) {
     let currentPos = 0;
     let lastScore = null;
@@ -175,10 +228,18 @@ export default function Super8Matches() {
     });
   }
 
-  // limitar placar: 1..6 e soma <= 6
   function handleScoreChange(matchIndex, field, value) {
-    let num = value === "" ? "" : Number(value);
-    if (num !== "" && (num < 1 || num > 6)) {
+    if (value === "") {
+      setMatches((prev) => {
+        const copy = [...prev];
+        copy[matchIndex] = { ...copy[matchIndex], [field]: "" };
+        return copy;
+      });
+      return;
+    }
+
+    let num = Number(value);
+    if (Number.isNaN(num) || num < 0 || num > 6) {
       return;
     }
 
@@ -189,17 +250,15 @@ export default function Super8Matches() {
       const otherVal =
         current[otherField] === "" ? "" : Number(current[otherField]);
 
-      current[field] = num === "" ? "" : num;
+      current[field] = num;
 
       if (
         current[field] !== "" &&
         otherVal !== "" &&
         current[field] + otherVal > 6
       ) {
-        current[otherField] = 6 - current[field];
-        if (current[otherField] < 1) {
-          current[otherField] = "";
-        }
+        const newOther = 6 - current[field];
+        current[otherField] = newOther >= 0 ? newOther : 0;
       }
 
       copy[matchIndex] = current;
@@ -207,7 +266,6 @@ export default function Super8Matches() {
     });
   }
 
-  // botão único
   async function handleFinalResult() {
     if (matches.length === 0) {
       alert("Gere os jogos primeiro.");
@@ -238,14 +296,12 @@ export default function Super8Matches() {
         ];
 
         for (const d of duplas) {
-          // jogador 1 (pode ser anjo-x)
           await api.post(`/super8/${id}/match`, {
             playerAId: d.player1,
             playerBId: null,
             gamesA: d.games,
             gamesB: 0,
           });
-          // jogador 2
           await api.post(`/super8/${id}/match`, {
             playerAId: d.player2,
             playerBId: null,
@@ -266,12 +322,37 @@ export default function Super8Matches() {
     }
   }
 
+  // jogadores filtrados pra lista de pesquisa
+  const searchResults =
+    search.trim().length === 0
+      ? []
+      : users.filter((u) =>
+          u.name.toLowerCase().includes(search.trim().toLowerCase())
+        );
+
+  function handlePickFromSearch(userId) {
+    // acha primeiro slot vazio
+    const emptyIndex = players.findIndex((p) => !p.userId);
+    if (emptyIndex !== -1) {
+      handlePlayerChange(emptyIndex, userId);
+    } else {
+      // se não tiver vazio, sobrescreve o primeiro
+      handlePlayerChange(0, userId);
+    }
+    setSearch("");
+  }
+
   return (
     <div className="super8-page">
       <div className="super8-topbar">
-        <button onClick={() => navigate("/dashboard")} className="back-btn">
-          ← Voltar
-        </button>
+        <div className="top-buttons">
+          <button onClick={() => navigate("/dashboard")} className="back-btn">
+            ← Dashboard
+          </button>
+          <button onClick={() => navigate("/")} className="home-btn">
+            Home
+          </button>
+        </div>
         <h1>{super8 ? super8.name : "Carregando..."}</h1>
         <p>Jogos do Super 8 no formato oficial (14 jogos).</p>
       </div>
@@ -281,6 +362,48 @@ export default function Super8Matches() {
         <div className="section-title">
           <span>Jogadores deste Super 8</span>
         </div>
+
+        {/* pesquisa de jogador */}
+        <input
+          type="text"
+          placeholder="Pesquisar jogador para adicionar..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            marginBottom: "0.5rem",
+            padding: "0.4rem 0.6rem",
+            borderRadius: "999px",
+            border: "1px solid rgba(31,79,117,0.25)",
+            width: "100%",
+            maxWidth: "340px",
+          }}
+        />
+        {searchResults.length > 0 && (
+          <div
+            style={{
+              background: "#fff",
+              border: "1px solid rgba(31,79,117,0.12)",
+              borderRadius: "14px",
+              marginBottom: "0.6rem",
+              maxWidth: "340px",
+            }}
+          >
+            {searchResults.slice(0, 8).map((u) => (
+              <div
+                key={u.id}
+                onClick={() => handlePickFromSearch(u.id)}
+                style={{
+                  padding: "0.35rem 0.6rem",
+                  cursor: "pointer",
+                  borderBottom: "1px solid rgba(31,79,117,0.03)",
+                }}
+              >
+                {u.name}
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="players-grid">
           {players.map((p, index) => (
             <select
@@ -325,7 +448,7 @@ export default function Super8Matches() {
                 </span>
                 <input
                   type="number"
-                  min="1"
+                  min="0"
                   max="6"
                   placeholder="Games"
                   value={m.gamesA}
@@ -336,7 +459,7 @@ export default function Super8Matches() {
                 <span className="vs">x</span>
                 <input
                   type="number"
-                  min="1"
+                  min="0"
                   max="6"
                   placeholder="Games"
                   value={m.gamesB}
@@ -399,7 +522,7 @@ export default function Super8Matches() {
                       {countByPos[p.position] > 1 && (
                         <span className="tie-badge">empate</span>
                       )}
-                      <span className="podium-name">{p.name}</span>
+                      <span className="podium-name">{p.name}: </span>
                       <span className="podium-points">
                         {p.totalGames} games
                       </span>
@@ -411,7 +534,11 @@ export default function Super8Matches() {
                       .filter((p) => p.position > 3)
                       .map((p) => (
                         <div key={p.userId} className="other-line">
-                          {p.position}º — {p.name} ({p.totalGames} games)
+                          {p.position}º —{" "}
+                          <span className="others-name">{p.name}: </span>
+                          <span className="others-points">
+                            {p.totalGames} games
+                          </span>
                         </div>
                       ))}
                   </div>

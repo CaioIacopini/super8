@@ -200,7 +200,7 @@ body {
 .ranking-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.2rem;
 }
 
 .ranking-item {
@@ -245,4 +245,88 @@ body {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* bloco especial do último super 8 */
+.last-super8-card {
+  background: linear-gradient(120deg, #ffffff 0%, #eef4f7 100%);
+  border: 1px solid rgba(31, 79, 117, 0.03);
+}
+
+.last-super8-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #1f4f75;
+}
+
+.last-super8-header p {
+  margin: 0.15rem 0 0;
+  color: #809eb3;
+  font-size: 0.78rem;
+}
+
+.last-super8-podium {
+  display: flex;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.last-super8-item {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 0.45rem 0.6rem;
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  min-width: 160px;
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.02);
+}
+
+.last-super8-item .place {
+  font-size: 1.1rem;
+}
+
+.last-super8-item .info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.last-super8-item .name {
+  font-weight: 600;
+  color: #1d3340;
+}
+
+.last-super8-item .points {
+  font-size: 0.7rem;
+  color: #5d7485;
+}
+
+.last-super8-item.first {
+  border: 1px solid rgba(255, 203, 74, 0.4);
+  box-shadow: 0 14px 30px rgba(255, 203, 74, 0.18);
+}
+
+.last-super8-item.second {
+  border: 1px solid rgba(184, 198, 207, 0.5);
+}
+
+.last-super8-item.third {
+  border: 1px solid rgba(222, 178, 125, 0.25);
+}
+
+.last-super8-more {
+  background: rgba(31, 79, 117, 0.05);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.7rem;
+  color: #1f4f75;
+  align-self: center;
+}
+
+.last-super8-empty {
+  margin-top: 0.5rem;
+  color: #809eb3;
+  font-size: 0.8rem;
 }

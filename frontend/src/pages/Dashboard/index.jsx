@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import "./style.css";
@@ -7,37 +7,64 @@ export default function Dashboard() {
   const [users, setUsers] = useState([]);
   const [super8s, setSuper8s] = useState([]);
   const [ranking, setRanking] = useState([]);
+  const [lastS8Ranking, setLastS8Ranking] = useState([]);
   const navigate = useNavigate();
 
-  // carregar usuários
-  useEffect(() => {
-    async function fetchUsers() {
+  const savedUser = localStorage.getItem("super8_user");
+  const currentUser = savedUser ? JSON.parse(savedUser) : null;
+  const isAdmin = currentUser?.role === "ADMIN";
+
+  const loadSuper8s = useCallback(async () => {
+    try {
+      const res = await api.get("/super8");
+      setSuper8s(res.data);
+
+      // pega o mais recente e monta o pódio compacto
+      if (res.data.length > 0) {
+        const last = res.data[0];
+        const r = await api.get(`/super8/${last.id}/ranking`);
+        setLastS8Ranking(r.data);
+      } else {
+        setLastS8Ranking([]);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar super8:", err);
+      if (err.response?.status === 401) {
+        navigate("/");
+      }
+    }
+  }, [navigate]);
+
+  const loadRanking = useCallback(async () => {
+    try {
+      const res = await api.get("/ranking");
+      setRanking(res.data);
+    } catch (err) {
+      console.error("Erro ao carregar ranking:", err);
+    }
+  }, []);
+
+  const loadUsers = useCallback(async () => {
+    if (!isAdmin) return;
+    try {
       const res = await api.get("/usuarios");
       setUsers(res.data);
+    } catch (err) {
+      console.error("Erro ao carregar usuários:", err);
     }
-    fetchUsers();
-  }, []);
-
-  // carregar super 8
-  const loadSuper8s = useCallback(async () => {
-    const res = await api.get("/super8");
-    setSuper8s(res.data);
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
+    const token = localStorage.getItem("super8_token");
+    if (!token) {
+      navigate("/");
+      return;
+    }
     loadSuper8s();
-  }, [loadSuper8s]);
-
-  // carregar ranking global
-  async function loadRanking() {
-    const res = await api.get("/ranking");
-    setRanking(res.data);
-  }
-  useEffect(() => {
     loadRanking();
-  }, []);
+    loadUsers();
+  }, [navigate, loadSuper8s, loadRanking, loadUsers]);
 
-  // criar super 8 e ir para a página dos jogos
   async function handleCreateSuper8() {
     try {
       const res = await api.post("/super8", {
@@ -46,26 +73,21 @@ export default function Dashboard() {
       navigate(`/super8/${res.data.id}`);
     } catch (err) {
       console.error(err);
-      alert("Erro ao criar super 8");
+      alert(err.response?.data?.error || "Erro ao criar super 8");
     }
   }
 
-  // deletar 1 super 8
-  async function handleDeleteSuper8(id) {
-    if (!window.confirm("Tem certeza que deseja excluir este Super 8?")) return;
-    await api.delete(`/super8/${id}`);
-    loadSuper8s();
-    loadRanking();
-  }
-
-  // zerar ranking
   async function handleResetRanking() {
     if (!window.confirm("Deseja realmente zerar TODO o ranking?")) return;
-    await api.delete("/ranking/reset");
-    setRanking([]);
+    try {
+      await api.delete("/ranking/reset");
+      setRanking([]);
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao zerar ranking");
+    }
   }
 
-  // apagar todos os super 8
   async function handleResetAll() {
     if (
       !window.confirm(
@@ -73,9 +95,21 @@ export default function Dashboard() {
       )
     )
       return;
-    await api.delete("/super8/reset-all");
-    setSuper8s([]);
-    setRanking([]);
+    try {
+      await api.delete("/super8/reset-all");
+      setSuper8s([]);
+      setRanking([]);
+      setLastS8Ranking([]);
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao apagar todos os Super 8");
+    }
+  }
+
+  function handleLogout() {
+    localStorage.removeItem("super8_token");
+    localStorage.removeItem("super8_user");
+    navigate("/");
   }
 
   return (
@@ -84,81 +118,113 @@ export default function Dashboard() {
         <button className="ghost-btn" onClick={() => navigate("/")}>
           ← Home
         </button>
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <span style={{ fontSize: "0.85rem", color: "#1f4f75" }}>
+            {currentUser ? `${currentUser.name} (${currentUser.role})` : ""}
+          </span>
+          <button className="ghost-btn" onClick={handleLogout}>
+            Sair
+          </button>
+        </div>
       </div>
 
       <div className="dashboard-header">
         <h1>Super 8 – Dashboard</h1>
-        <p>Crie torneios, veja quem está cadastrado e acompanhe o ranking.</p>
+        <p>
+          {isAdmin
+            ? "Gerencie torneios, jogadores e ranking."
+            : "Crie seus Super 8 e acompanhe o ranking."}
+        </p>
       </div>
 
+      {/* todo mundo pode criar */}
       <div className="top-actions">
         <button className="primary-btn" onClick={handleCreateSuper8}>
           + Criar Super 8
         </button>
-        <button className="danger-btn" onClick={handleResetRanking}>
-          🧹 Zerar Ranking
-        </button>
-        <button className="danger-btn" onClick={handleResetAll}>
-          ⚠️ Apagar todos os Super 8
-        </button>
+        {isAdmin && (
+          <>
+            <button className="danger-btn" onClick={handleResetRanking}>
+              🧹 Zerar Ranking
+            </button>
+            <button className="danger-btn" onClick={handleResetAll}>
+              ⚠️ Apagar todos os Super 8
+            </button>
+          </>
+        )}
       </div>
 
-      {/* jogadores */}
-      <div className="section-card">
-        <div className="section-title">
-          <span>Jogadores cadastrados</span>
-        </div>
-        <div className="player-list">
-          {users.map((user) => (
-            <div className="player-item" key={user.id}>
-              <span>
-                {user.name} – {user.age} anos
-              </span>
-              <span>{user.email}</span>
-            </div>
-          ))}
-          {users.length === 0 && <p>Nenhum jogador ainda.</p>}
-        </div>
-      </div>
-
-      {/* super 8 anteriores */}
-      <div className="section-card">
-        <div className="section-title">
-          <span>Super 8 anteriores</span>
-        </div>
-        <div className="super8-list">
-          {super8s.map((s8) => (
-            <div className="super8-item" key={s8.id}>
-              <div className="super8-info">
-                <span className="super8-name">{s8.name}</span>
-                <small className="super8-date">
-                  {s8.createdAt
-                    ? new Date(s8.createdAt).toLocaleDateString("pt-BR")
-                    : ""}
-                </small>
+      {/* jogadores cadastrados - só admin */}
+      {isAdmin && (
+        <div className="section-card">
+          <div className="section-title">
+            <span>Jogadores cadastrados</span>
+          </div>
+          <div className="player-list">
+            {users.map((user) => (
+              <div className="player-item" key={user.id}>
+                <span>
+                  {user.name} – {user.age} anos
+                </span>
+                <span>
+                  {user.email} {user.role === "ADMIN" ? "(admin)" : ""}
+                </span>
               </div>
-              <div className="super8-buttons">
-                <button
-                  className="open-btn"
-                  onClick={() => navigate(`/super8/${s8.id}`)}
-                >
-                  Abrir →
-                </button>
-                <button
-                  className="delete-btn"
-                  onClick={() => handleDeleteSuper8(s8.id)}
-                  title="Excluir"
-                >
-                  🗑️
-                </button>
-              </div>
-            </div>
-          ))}
-          {super8s.length === 0 && <p>Nenhum Super 8 criado.</p>}
+            ))}
+            {users.length === 0 && <p>Nenhum jogador ainda.</p>}
+          </div>
         </div>
+      )}
+
+      {/* ÚLTIMO SUPER 8 – estilo de pódio compacto */}
+      <div className="section-card last-super8-card">
+        <div className="last-super8-header">
+          <div>
+            <h2>Último Super 8</h2>
+            {super8s.length > 0 && (
+              <p>
+                {super8s[0].name} •{" "}
+                {super8s[0].createdAt
+                  ? new Date(super8s[0].createdAt).toLocaleDateString("pt-BR")
+                  : ""}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {super8s.length === 0 ? (
+          <p className="last-super8-empty">Nenhum Super 8 criado ainda.</p>
+        ) : lastS8Ranking.length === 0 ? (
+          <p className="last-super8-empty">Ainda não há resultados.</p>
+        ) : (
+          <div className="last-super8-podium">
+            {lastS8Ranking.slice(0, 3).map((p, idx) => (
+              <div
+                key={p.userId}
+                className={`last-super8-item ${
+                  idx === 0 ? "first" : idx === 1 ? "second" : "third"
+                }`}
+              >
+                <span className="place">
+                  {idx === 0 ? "🥇" : idx === 1 ? "🥈" : "🥉"}
+                </span>
+                <div className="info">
+                  <span className="name">{p.name}</span>
+                  <span className="points">{p.totalGames} games</span>
+                </div>
+              </div>
+            ))}
+
+            {lastS8Ranking.length > 3 && (
+              <div className="last-super8-more">
+                + {lastS8Ranking.length - 3} jogadores
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* ranking */}
+      {/* ranking geral - todo mundo vê */}
       <div className="section-card">
         <div className="section-title">
           <span>Ranking geral</span>
