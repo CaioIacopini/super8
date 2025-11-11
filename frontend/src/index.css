@@ -1,0 +1,14 @@
+body {
+  margin: 0;
+  font-family: "Zalando Sans", sans-serif;
+  background: linear-gradient(90deg, #ff9900ff 0%, #f3e80eff 100%);
+  color: #04436ac8;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+#root {
+  width: 100%;
+}

@@ -1,0 +1,232 @@
+.super8-page {
+  min-height: 100vh;
+  background: linear-gradient(90deg, #ff9900ff 0%, #f3e80eff 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 2.5rem 1rem 3rem;
+  box-sizing: border-box;
+  font-family: "Zalando Sans", sans-serif;
+  color: #04436ac8;
+  position: relative;
+}
+
+.super8-topbar {
+  background-color: #ffffff76;
+  padding: 1.25rem 2rem;
+  border-radius: 40px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+  max-width: 900px;
+  width: 100%;
+  text-align: center;
+}
+
+.super8-topbar h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #04436a;
+}
+
+.back-btn {
+  position: absolute;
+  left: 1.5rem;
+  top: 1.5rem;
+  background: #ffffff;
+  border: 1px solid #04436a;
+  border-radius: 999px;
+  padding: 0.35rem 1rem;
+  cursor: pointer;
+}
+
+.section-card {
+  background-color: #ffffff76;
+  padding: 1.25rem 1.5rem;
+  border-radius: 40px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  max-width: 900px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.section-title {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.players-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.players-grid select {
+  padding: 0.4rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid #04436ac8;
+  background: #fff;
+}
+
+.primary-btn,
+.secondary-btn {
+  border-radius: 999px;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+
+.primary-btn {
+  background-color: #04436ac8;
+  color: #fff;
+}
+
+.secondary-btn {
+  background: #fff;
+  color: #04436ac8;
+  border: 1px solid #04436ac8;
+}
+
+.matches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.match-row {
+  background: #ffffffbd;
+  border-radius: 20px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.match-row input {
+  width: 55px;
+  padding: 0.2rem 0.4rem;
+  border-radius: 12px;
+  border: 1px solid #04436ac8;
+}
+
+.match-number {
+  background: #04436a;
+  color: #fff;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.match-row .vs {
+  font-weight: 700;
+}
+
+.final-btn {
+  margin-top: 1rem;
+  background: #04436a;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.final-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.final-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.podium-wrapper {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.podium-card {
+  background: #ffffffbd;
+  border-radius: 20px;
+  padding: 1rem 1.2rem;
+  min-width: 180px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+  position: relative;
+}
+
+.podium-card .podium-place {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 700;
+}
+
+.tie-badge {
+  display: inline-block;
+  background: #f7d543;
+  color: #04436a;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.champion {
+  animation: champion-pop 1.2s ease-out;
+  border: 2px solid #f7d543;
+  box-shadow: 0 8px 16px rgba(247, 213, 67, 0.35);
+}
+
+@keyframes champion-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.others {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.other-line {
+  background: #ffffffaa;
+  border-radius: 12px;
+  padding: 0.25rem 0.6rem;
+}
+
+@media (max-width: 768px) {
+  .players-grid {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+  .match-row {
+    flex-wrap: wrap;
+  }
+  .back-btn {
+    position: static;
+    margin-bottom: 0.75rem;
+  }
+}

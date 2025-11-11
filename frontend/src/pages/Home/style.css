@@ -1,0 +1,113 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 2rem;
+}
+
+.Usercards {
+  background-color: #ffffff76;
+  padding: 1rem 1.25rem;
+  border-radius: 50px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 90%;
+  max-width: 800px;
+}
+
+.Usercards button {
+  background: transparent;
+  border: none;
+  padding: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.Usercards button img {
+  width: 30px;
+  height: 30px;
+  max-width: 30px;
+}
+
+.Usercards > div {
+  flex: 1 1 auto;
+}
+
+.form1 {
+  background-color: #ffffff76;
+  padding: 6rem;
+  border-radius: 50px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+  max-width: 800px;
+  box-sizing: border-box;
+}
+
+.submitBtn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 50px;
+  border: none;
+  background-color: #04436ac8;
+  color: white;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-weight: bold;
+}
+
+.submitBtn:hover {
+  background-color: #032f4a;
+}
+
+.dashboardBtn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 50px;
+  border: 1px solid #04436ac8;
+  background-color: #fff;
+  color: #04436ac8;
+  font-size: 1.1rem;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.form2 {
+  background: linear-gradient(90deg, #e898206d 0%, #e7dd2a6c 100%);
+  padding: 1rem;
+  border-radius: 50px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  flex-direction: column;
+  width: 92%;
+  max-width: 800px;
+  font-size: 1.05rem;
+  font-family: "Zalando Sans", sans-serif;
+  font-weight: bold;
+}
+
+input {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #04436ac8;
+  font-size: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+span {
+  font-weight: normal;
+  color: #575454ff;
+}

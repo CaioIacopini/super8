@@ -1,0 +1,38 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  email String @unique
+  name  String
+  age   String
+
+  results Super8Result[]
+}
+
+model Super8 {
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  createdAt DateTime       @default(now())
+  results   Super8Result[]
+}
+
+model Super8Result {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  super8Id  String   @db.ObjectId
+  userId    String?  @db.ObjectId
+  gamesWon  Int      @default(0)
+  isAngel   Boolean  @default(false)
+
+  super8    Super8   @relation(fields: [super8Id], references: [id])
+  user      User?    @relation(fields: [userId], references: [id])
+}
