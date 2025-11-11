@@ -57,10 +57,10 @@ function Home() {
         </button>
         <button
           type="button"
-          className="submitBtn"
+          className="secondaryBtn"
           onClick={() => navigate("/dashboard")}
         >
-          Ir para Dashboard
+          Ir para Dashboard →
         </button>
       </form>
 
