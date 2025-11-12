@@ -7,7 +7,6 @@
   ],
   "scripts": {
     "install:all": "npm i -ws",
-    "postinstall": "npm --prefix backend run postinstall",
     "dev": "npm-run-all -p dev:*",
     "dev:api": "npm --prefix backend run dev",
     "dev:web": "npm --prefix frontend run dev",
