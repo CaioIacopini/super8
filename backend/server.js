@@ -10,6 +10,8 @@ import { PrismaClient } from "./generated/prisma/index.js";
 
 const prisma = new PrismaClient();
 const app = express();
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`API running on :${PORT}`));
 
 app.use(express.json());
 app.use(cors());
@@ -35,6 +37,9 @@ try {
 }
 
 const JWT_SECRET = "super8-secret-very-strong";
+
+// server.js
+app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
 
 // ============== helpers de anjo ==============
 const ANGEL_OBJECT_IDS = {
@@ -484,7 +489,3 @@ app.get("/", (req, res) => {
 });
 
 // Use the port provided by the environment (Render, Heroku, etc.) or 3000 locally
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`API rodando na porta ${PORT}`);
-});
