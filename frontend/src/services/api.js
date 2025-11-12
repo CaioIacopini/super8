@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:3000",
+  baseURL: "https://super8-1.onrender.com",
 });
 
 // sempre que tiver token no localStorage, envia
