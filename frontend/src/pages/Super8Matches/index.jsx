@@ -520,7 +520,7 @@ export default function Super8Matches() {
                           : "🥉 3º lugar"}
                       </span>
                       {countByPos[p.position] > 1 && (
-                        <span className="tie-badge">Empate</span>
+                        <span className="tie-badge">empate</span>
                       )}
                       <span className="podium-name">{p.name}: </span>
                       <span className="podium-points">
@@ -534,7 +534,11 @@ export default function Super8Matches() {
                       .filter((p) => p.position > 3)
                       .map((p) => (
                         <div key={p.userId} className="other-line">
-                          {p.position}º — {p.name} ({p.totalGames} games)
+                          {p.position}º —{" "}
+                          <span className="others-name">{p.name}: </span>
+                          <span className="others-points">
+                            {p.totalGames} games
+                          </span>
                         </div>
                       ))}
                   </div>

@@ -1,4 +1,4 @@
-/* global */
+/* frontend/src/index.css */
 :root {
   --bg: linear-gradient(160deg, #d2f3e5 0%, #edf6ff 55%, #ffffff 100%);
   --green: #2f8966;
@@ -17,7 +17,10 @@ body {
     sans-serif;
   background: var(--bg);
   color: var(--text);
-  min-height: 100vh;
+  /* força o fundo global a vencer qualquer vazamento */
+  body {
+    background: var(--bg) !important;
+  }
 }
 
 #root {

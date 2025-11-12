@@ -1,45 +1,16 @@
-import "dotenv/config";
 import cors from "cors";
 import express from "express";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { PrismaClient } from "./generated/prisma/index.js";
 
 const prisma = new PrismaClient();
 const app = express();
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`API running on :${PORT}`));
 
 app.use(express.json());
 app.use(cors());
 
-// If a frontend build was copied into backend/dist, serve it as static files
-try {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  const distPath = path.join(__dirname, "dist");
-
-  if (fs.existsSync(distPath)) {
-    app.use(express.static(distPath));
-
-    // Fallback to index.html for client-side routing, but skip API routes
-    app.get("*", (req, res, next) => {
-      const apiPrefixes = ["/auth", "/super8", "/usuarios", "/ranking"];
-      if (apiPrefixes.some((p) => req.path.startsWith(p))) return next();
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  }
-} catch (err) {
-  console.error("Error while configuring static frontend serving:", err);
-}
-
 const JWT_SECRET = "super8-secret-very-strong";
-
-// server.js
-app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
 
 // ============== helpers de anjo ==============
 const ANGEL_OBJECT_IDS = {
@@ -483,9 +454,19 @@ app.delete("/ranking/reset", auth, isAdmin, async (req, res) => {
   }
 });
 
-// root route to make the app respond on GET /
-app.get("/", (req, res) => {
-  res.send("API is running. See /auth, /super8 and other endpoints.");
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// serve build do React
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
 });
 
-// Use the port provided by the environment (Render, Heroku, etc.) or 3000 locally
+app.listen(3000, () => {
+  console.log("API rodando na porta 3000");
+});
