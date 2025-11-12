@@ -1,5 +1,6 @@
 {
   "name": "react-api-monorepo",
+  "type": "module",
   "private": true,
   "workspaces": [
     "backend",
