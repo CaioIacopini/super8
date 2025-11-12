@@ -1,8 +1,17 @@
 // src/services/api.js
 import axios from "axios";
 
+// Use Vite env variable VITE_API_URL when available. Falls back to
+// the Render deployment URL (production) or localhost for local dev.
+const envUrl = import.meta.env.VITE_API_URL;
+const baseURL =
+  envUrl ||
+  (window.location.hostname === "localhost"
+    ? "http://localhost:3000"
+    : "https://super8-1.onrender.com");
+
 const api = axios.create({
-  baseURL: "https://super8-1.onrender.com",
+  baseURL,
 });
 
 // sempre que tiver token no localStorage, envia
