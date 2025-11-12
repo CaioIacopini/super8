@@ -12,7 +12,8 @@
     "build-frontend:win": "cd ..\\frontend && npm install && npm run build && cd ..\\backend && if exist dist rmdir /s /q dist && xcopy ..\\frontend\\dist dist /E /I /Y",
     "start-local:unix": "npm run build-frontend:unix && node server.js",
     "build-frontend:unix": "bash -lc 'cd ../frontend && npm install && npm run build && cd ../backend && rm -rf dist && cp -r ../frontend/dist ./dist'",
-    "prisma:gen": "npx prisma generate"
+    "prisma:gen": "npx prisma generate",
+    "postinstall": "npx prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.19.1",
