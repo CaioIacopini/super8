@@ -181,12 +181,11 @@
 }
 
 .podium-card {
-  background: #f7fbff;
+  background: #d0f6f185;
   border-radius: 16px;
   padding: 1rem 1rem 0.65rem;
   min-width: 170px;
   border: 1px solid rgba(31, 79, 117, 0.035);
-  margin-left: 5rem;
 }
 
 .podium-place {
@@ -198,21 +197,6 @@
 
 .podium-name {
   font-weight: 600;
-  margin-left: 0.5rem;
-  display: inline-block;
-}
-
-.others-name {
-  font-weight: 600;
-  margin-left: 1.2rem;
-}
-
-others-points {
-  color: #000000ff;
-  font-size: 1rem;
-  margin-left: 0.25rem;
-  font-weight: 500;
-  display: inline-block;
 }
 
 .podium-points {
@@ -226,11 +210,12 @@ others-points {
 .tie-badge {
   background: #ffe4a8;
   border-radius: 999px;
-  padding: 0.05rem 0.5rem;
-  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
   font-weight: 600;
   display: inline-block;
-  margin-bottom: 1rem;
+  margin-bottom: 0.4rem;
+  margin-right: 0.4rem;
 }
 
 .champion {
@@ -249,11 +234,10 @@ others-points {
 }
 
 .others .other-line {
-  background: #c0d1e148;
+  background: #e2edf8ff;
   border-radius: 10px;
   margin-top: 0.5rem;
-  padding: 0.3rem 10rem;
-  display: inline-block;
+  padding: 0.3rem 26rem;
 }
 
 @media (max-width: 850px) {
