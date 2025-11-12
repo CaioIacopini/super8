@@ -5,8 +5,10 @@
   "scripts": {
     "dev": "node --watch server.js",
     "start": "node server.js",
+    "build": "prisma generate",
+    "postinstall": "prisma generate",
     "deploy-local": "npm run build-frontend && node server.js",
-    "build-frontend": "cd ../frontend && npm install && npm run build && cd ../backend && (if exist dist rmdir /s /q dist) && xcopy ..\\frontend\\dist dist /E /I /Y"
+    "build-frontend": "cd ../frontend && npm install && npm run build && cd ../backend && rm -rf dist && cp -r ../frontend/dist ./dist || (if exist dist rmdir /s /q dist) && xcopy ..\\frontend\\dist dist /E /I /Y"
   },
   "dependencies": {
     "@prisma/client": "^6.18.0",
