@@ -154,13 +154,28 @@ app.post("/auth/make-admin", auth, isAdmin, async (req, res) => {
 // lista básica para TODOS logados (id + name) -> pra montar selects
 app.get("/usuarios/basic", auth, async (req, res) => {
   try {
+    const { search } = req.query;
+
+    const where = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            { email: { contains: search, mode: "insensitive" } },
+          ],
+        }
+      : {};
+
     const list = await prisma.user.findMany({
+      where,
       select: {
         id: true,
         name: true,
+        email: true, // ajuda a exibir no app na lista de busca
       },
       orderBy: { name: "asc" },
+      take: 30, // limita a quantidade, opcional
     });
+
     res.json(list);
   } catch (err) {
     console.error("Erro ao buscar usuários básicos:", err);
