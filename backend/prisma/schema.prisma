@@ -21,11 +21,16 @@ model User {
 }
 
 model Super8 {
-  id        String         @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  createdAt DateTime       @default(now())
-  results   Super8Result[]
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  createdAt  DateTime    @default(now())
+
+  date       DateTime?    // <---- novo campo (opcional)
+  location   String?      // <---- novo campo (opcional)
+
+  results    Super8Result[]
 }
+
 
 model Super8Result {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId

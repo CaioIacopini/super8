@@ -225,11 +225,29 @@ app.delete("/usuarios/:id", auth, isAdmin, async (req, res) => {
 // criar -> QUALQUER logado
 app.post("/super8", auth, async (req, res) => {
   try {
+    const { name, date, location } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: "Nome é obrigatório." });
+    }
+
+    // tenta converter a data enviada (string) para Date
+    let parsedDate = null;
+    if (date) {
+      const d = new Date(date);
+      if (!isNaN(d.getTime())) {
+        parsedDate = d;
+      }
+    }
+
     const super8 = await prisma.super8.create({
       data: {
-        name: req.body.name || "Super 8",
+        name: name || "Super 8",
+        date: parsedDate, // 🔹 agora grava a data
+        location: location || null, // 🔹 e o local
       },
     });
+
     res.status(201).json(super8);
   } catch (err) {
     console.error("Erro ao criar Super 8:", err);
